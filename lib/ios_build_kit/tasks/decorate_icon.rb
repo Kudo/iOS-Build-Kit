@@ -1,6 +1,7 @@
 module BuildKit
   
   require 'rmagick'
+  require 'json'
 
   module Tasks
 
@@ -21,8 +22,8 @@ module BuildKit
       end
 
       def run!
+        @runner.store[:backup_icon_paths] = []
         decorate_icons!
-        update_plist_icons!
         complete_task!
       end
 
@@ -33,6 +34,10 @@ module BuildKit
         BuildKit::Utilities::Assertions.assert_files_exist [@config.info_plist, @config.icon_dir]
       end
 
+      def is_asset_catalog
+        File.exist? "#{@config.icon_dir}/Contents.json"
+      end
+
       def version_number_to_draw
         if @runner.has_completed_task? :increment_version
           @runner.store[:new_version_number][:full]
@@ -41,39 +46,40 @@ module BuildKit
         end
       end
 
-      def icon_files_to_decorate
+      def icon_files_to_decorate_asset_catalog
+        to_decorate = []
+        contents = JSON.parse File.read("#{@config.icon_dir}/Contents.json")
+        contents["images"].each do |image|
+          filename = image["filename"]
+          next unless filename
+          to_decorate << "#{@config.icon_dir}/#{filename}"
+        end
+        to_decorate
+      end
+
+      def icon_files_to_decorate_CFBundleIcons
         to_decorate = []
         Dir.glob("#{@config.icon_dir}/*.png").each do |filename|
-          next if filename.include? "Decorated"
           to_decorate << filename
         end
         to_decorate
       end
 
-      def decorated_icon_path icon_path
-        original_img_filename = File.basename icon_path
-        new_img_filename = "Decorated-" + original_img_filename
-        icon_path.gsub(original_img_filename, new_img_filename)
+      def icon_files_to_decorate
+        return is_asset_catalog ? icon_files_to_decorate_asset_catalog : icon_files_to_decorate_CFBundleIcons
+      end
+
+      def backup_icon! icon_path
+        backup_icon_filename = "_Original-" + File.basename(icon_path)
+        backup_icon_path = File.join File.dirname(icon_path), backup_icon_filename
+        FileUtils.mv icon_path, backup_icon_path, :force => true
+        @runner.store[:backup_icon_paths] << backup_icon_path
       end
 
       def decorate_icons!
         icon_files_to_decorate.each do |img_path|
           @decorated_icons << create_decorated_version_of(img_path)
         end
-      end
-
-      def update_plist_icons!
-        backup_plist = @runner.config.info_plist.gsub(/(\.plist)$/i, '.orig\1')
-        FileUtils.remove_file backup_plist, true
-        FileUtils.cp @runner.config.info_plist, backup_plist
-        @runner.store[:backup_plist] = backup_plist
-
-        icons = BuildKit::Utilities::PlistPal.read_array_value_in_plist(
-          @runner.config.info_plist, "CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles")
-
-        decorated_icons = icons.map{|icon| decorated_icon_path(icon)}
-        BuildKit::Utilities::PlistPal.write_array_value_in_plist(
-          @runner.config.info_plist, "CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles", decorated_icons)
       end
 
       def create_decorated_version_of icon_path
@@ -105,10 +111,10 @@ module BuildKit
           self.font_weight = annotation_params[:font_weight]
         end
 
-        new_img_full_path = decorated_icon_path(icon_path)
-        decorated_icon.write(new_img_full_path)
+        backup_icon! icon_path
+        decorated_icon.write(icon_path)
 
-        new_img_full_path
+        icon_path
       end
 
       def complete_task!

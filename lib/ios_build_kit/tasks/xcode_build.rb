@@ -1,9 +1,9 @@
 module BuildKit
-  
+
   module Tasks
 
     require "fileutils"
-    
+
     def self.xcode_build runner, task_opts
       task = XcodeBuildTask.new({ runner: runner, opts: task_opts })
       task.run!
@@ -60,8 +60,10 @@ module BuildKit
 
       def cleanup_build_assets!
         if @runner.has_completed_task? :decorate_icon
-          backup_plist = @runner.store[:backup_plist]
-          FileUtils.mv backup_plist, @runner.config.info_plist, :force => true
+          @runner.store[:backup_icon_paths].each do |backup_icon_path|
+            icon_path = backup_icon_path.gsub("_Original-", "")
+            FileUtils.mv backup_icon_path, icon_path, :force => true
+          end
         end
       end
 
@@ -74,5 +76,5 @@ module BuildKit
     end
 
   end
-  
+
 end

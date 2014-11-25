@@ -26,7 +26,7 @@ module BuildKit
       private
 
       def assert_requirements
-        BuildKit::Utilities::Assertions.assert_required_config [:app_name, :workspace, :sdk, :build_configuration, :build_dir, :scheme], @runner
+        BuildKit::Utilities::Assertions.assert_required_config [:app_name, :workspace, :sdk, :build_configuration, :build_dir, :scheme, :code_sign, :provisioning_profile], @runner
         BuildKit::Utilities::Assertions.assert_files_exist [@config.absolute_build_dir, @config.workspace]
       end
 
@@ -39,8 +39,10 @@ module BuildKit
         sdk_arg = "-sdk \"#{@config.sdk}\""
         scheme_arg = "-scheme \"#{@config.scheme}\""   
         configuration_arg = "-configuration \"#{@config.build_configuration}\""
+        code_sign_arg = "CODE_SIGN_IDENTITY=\"#{@config.code_sign}\""
+        provisioning_arg = "PROVISIONING_PROFILE=\"#{@config.provisioning_profile}\""
         build_dir_arg = "CONFIGURATION_BUILD_DIR=\"#{@config.absolute_build_dir}\""
-        "xcodebuild #{workspace_arg} #{sdk_arg} #{scheme_arg} #{configuration_arg} #{build_dir_arg} #{cmd} | xcpretty -c; echo EXIT CODE: ${PIPESTATUS}"
+        "xcodebuild #{workspace_arg} #{sdk_arg} #{scheme_arg} #{configuration_arg} #{code_sign_arg} #{provisioning_arg} #{build_dir_arg} #{cmd} | xcpretty -c; echo EXIT CODE: ${PIPESTATUS}"
       end
 
       def run_command! cmd

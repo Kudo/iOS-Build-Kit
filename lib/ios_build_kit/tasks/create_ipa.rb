@@ -28,8 +28,8 @@ module BuildKit
 
       def assert_requirements
         BuildKit::Utilities::Assertions.assert_tasks_completed [:xcode_build], @runner
-        BuildKit::Utilities::Assertions.assert_required_config [:code_sign, :provisioning_profile], @runner
-        BuildKit::Utilities::Assertions.assert_files_exist [@config.provisioning_profile]
+        # BuildKit::Utilities::Assertions.assert_required_config [:code_sign, :provisioning_profile], @runner
+        # BuildKit::Utilities::Assertions.assert_files_exist [@config.provisioning_profile]
       end
 
       def warn_about_missing_plist_config
@@ -68,7 +68,8 @@ module BuildKit
         output_file_arg = "-o \"#{artefact_full_path}\"" 
         code_sign_arg = "--sign \"#{@config.code_sign}\""
         provisioning_arg = "--embed \"#{@config.provisioning_profile}\""
-        "xcrun #{sdk_arg} PackageApplication #{build_file_arg} #{output_file_arg} #{provisioning_arg} #{code_sign_arg}"
+        # "xcrun #{sdk_arg} PackageApplication #{build_file_arg} #{output_file_arg} #{provisioning_arg} #{code_sign_arg}"
+        "xcrun #{sdk_arg} PackageApplication #{build_file_arg} #{output_file_arg}"
       end
 
       def run_command!

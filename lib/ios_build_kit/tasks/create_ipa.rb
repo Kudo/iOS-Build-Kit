@@ -1,15 +1,15 @@
 module BuildKit
-  
+
   module Tasks
 
     def self.create_ipa runner, task_opts
       task = CreateIPATask.new({ runner: runner, opts: task_opts })
       task.run!
     end
-      
+
     private
 
-  class CreateIPATask < BuildKitTask
+    class CreateIPATask < BuildKitTask
 
       attr_accessor :artefact_filename
 
@@ -66,9 +66,9 @@ module BuildKit
         sdk_arg = "-sdk #{@config.sdk}"
         build_file_arg = "-v \"#{File.join(@config.absolute_build_dir, @config.app_name)}.app\"" 
         output_file_arg = "-o \"#{artefact_full_path}\"" 
-        code_sign_arg = "--sign #{@config.code_sign}"
+        code_sign_arg = "--sign \"#{@config.code_sign}\""
         provisioning_arg = "--embed \"#{@config.provisioning_profile}\""
-        "xcrun #{sdk_arg} PackageApplication #{build_file_arg} #{output_file_arg} #{provisioning_arg}"
+        "xcrun #{sdk_arg} PackageApplication #{build_file_arg} #{output_file_arg} #{provisioning_arg} #{code_sign_arg}"
       end
 
       def run_command!
@@ -88,7 +88,7 @@ module BuildKit
       end
 
     end
-      
+
   end
-  
+
 end
